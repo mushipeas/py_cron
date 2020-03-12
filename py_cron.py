@@ -54,8 +54,7 @@ def run_task(task):
     subprocess.Popen() is non-blocking, and can be polled if we want to get a returncode, etc.
     """
 
-    with print_lock:
-        print("Running {}.".format(task))
+    s_print("Running {}.".format(task))
     try:
         subprocess.Popen(
             task,
@@ -64,8 +63,7 @@ def run_task(task):
             shell=True,
         )
     except OSError as e:
-        with print_lock:
-            print("Execution failed:", e, file=sys.stderr)
+        s_print("Execution failed:", e, file=sys.stderr)
 
     return True
 
@@ -102,18 +100,16 @@ class Job(threading.Thread):
 
     def run(self):
         try:
-            with print_lock:
-                print("Thread started for {} {}.".format(self.schedule, self.task))
+            s_print("Thread started for {} {}.".format(self.schedule, self.task))
             base = datetime.datetime.now()
             iter = croniter(self.schedule, base)
 
             while not self.stopped:
                 next_runtime = iter.get_next(datetime.datetime)
                 wait_time = time_left(next_runtime)
-                with print_lock:
-                    print(
-                        "Task {} next scheduled for {}.".format(self.task, next_runtime)
-                    )
+                s_print(
+                    "Task {} next scheduled for {}.".format(self.task, next_runtime)
+                )
 
                 while wait_time > MAX_WAIT:
                     time.sleep(MAX_WAIT)
@@ -123,8 +119,12 @@ class Job(threading.Thread):
 
                 run_task(self.task)
         finally:
-            with print_lock:
-                print("Thread ended for {} {}.".format(self.schedule, self.task))
+            s_print("Thread ended for {} {}.".format(self.schedule, self.task))
+
+
+def s_print(*args, **kwargs):
+    with print_lock:
+        print(*args, **kwargs)
 
 
 if __name__ == "__main__":
@@ -135,4 +135,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Scheduler Finished.")
+        s_print("Scheduler Finished.")
