@@ -8,7 +8,11 @@ from pathlib import Path
 
 from croniter import croniter
 
+# currently set to deal with time.sleep() max input
 MAX_WAIT = 2760000
+
+# print lock, to prevent multiple threads printing concurrently
+print_lock = threading.Lock()
 
 
 def import_pctab(args):
@@ -50,7 +54,8 @@ def run_task(task):
     subprocess.Popen() is non-blocking, and can be polled if we want to get a returncode, etc.
     """
 
-    print("Running {}.".format(task))
+    with print_lock:
+        print("Running {}.".format(task))
     try:
         subprocess.Popen(
             task,
@@ -59,7 +64,8 @@ def run_task(task):
             shell=True,
         )
     except OSError as e:
-        print("Execution failed:", e, file=sys.stderr)
+        with print_lock:
+            print("Execution failed:", e, file=sys.stderr)
 
     return True
 
@@ -96,14 +102,18 @@ class Job(threading.Thread):
 
     def run(self):
         try:
-            print("Thread started for {} {}.".format(self.schedule, self.task))
+            with print_lock:
+                print("Thread started for {} {}.".format(self.schedule, self.task))
             base = datetime.datetime.now()
             iter = croniter(self.schedule, base)
 
             while not self.stopped:
                 next_runtime = iter.get_next(datetime.datetime)
-                print("Task {} next scheduled for {}.".format(self.task, next_runtime))
                 wait_time = time_left(next_runtime)
+                with print_lock:
+                    print(
+                        "Task {} next scheduled for {}.".format(self.task, next_runtime)
+                    )
 
                 while wait_time > MAX_WAIT:
                     time.sleep(MAX_WAIT)
@@ -113,7 +123,8 @@ class Job(threading.Thread):
 
                 run_task(self.task)
         finally:
-            print("Thread ended for {} {}.".format(self.schedule, self.task))
+            with print_lock:
+                print("Thread ended for {} {}.".format(self.schedule, self.task))
 
 
 if __name__ == "__main__":
