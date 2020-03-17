@@ -1,3 +1,3 @@
-* * * * * time /T >>perminute.txt
+* * * * * time /T >>"per minute.txt"
 */5 * * * * time /T >>per5minute.txt
 1 * * * * time /T >>perhour.txt

@@ -34,11 +34,11 @@ def import_pctab(args):
 
 
 def parse_pctab(pctab_file):
-    """Returns the schedule table as a list formatted [date-and-time, [task args]]"""
+    """Returns the schedule table as a list formatted [date-and-time, "task_string"]"""
     with pctab_file.open() as f:
         pctab_ = f.readlines()
 
-    pctab = [[" ".join(line.split()[:5]), line.split()[5:]] for line in pctab_]
+    pctab = [[" ".join(line.split()[:5]), " ".join(line.split()[5:])] for line in pctab_]
 
     return pctab
 
@@ -54,7 +54,7 @@ def run_task(task):
     subprocess.Popen() is non-blocking, and can be polled if we want to get a returncode, etc.
     """
 
-    s_print("Running {}.".format(task))
+    s_print("Running [{}].".format(task))
     try:
         subprocess.Popen(
             task,
@@ -108,7 +108,7 @@ class Job(threading.Thread):
                 next_runtime = iter.get_next(datetime.datetime)
                 wait_time = time_left(next_runtime)
                 s_print(
-                    "Task {} next scheduled for {}.".format(self.task, next_runtime)
+                    "Task [{}] next scheduled for {}.".format(self.task, next_runtime)
                 )
 
                 while wait_time > MAX_WAIT:
